@@ -1,14 +1,15 @@
+//Made by Maarten Peels (skype: maarten-peels)
 var songCount = 0;
 
 var startTime = GetDate();
 
 var afk = false;
-var afkMessage = "I'm a bot..";
-var afkTime = 60 * 60 * 1000;
+var afkMessage = "I'm a bot.";
+var afkTime = 60;//minutes
+var version = "Made for plug.dj version: 0.9.X";
 
 var disconnectLog = [];
 var users = [];
-var addQueue = [];
 var history = [];
 
 var moveId = "";
@@ -16,7 +17,7 @@ var moveTo = 1;
 
 var botName = API.getUser();
 
-var sendMessages = false;//true=messages is chat false=messages in console
+var sendMessages = false;
 
 function Initialize(){
 	GetUsers();
@@ -31,8 +32,8 @@ function HookEvents(){
 	API.on(API.WAIT_LIST_UPDATE, OnWaitlistUpdate);
 	API.on(API.USER_LEAVE, OnUserLeave);
 	setTimeout(Sleep, 200);
-	Message("Loaded!", messageStyles.LOG, null);
-	if(!sendMessages) API.chatLog("Loaded!");
+	Message("Loaded! "+ version, messageStyles.LOG, null);
+	Message("Bot online!", messageStyles.ME, null);
 }
 
 function GetUsers(){
@@ -54,7 +55,6 @@ function Die(){
 	Message("Clearing bot data..", messageStyles.LOG, null);
 	disconnectLog = [];
 	users = [];
-	addQueue = [];
 	history = [];
 	setTimeout(Sleep, 200);
 	Message("Done, consider me dead!", messageStyles.LOG, null);
@@ -65,48 +65,49 @@ function AfkCheck(){
 		var now = new Date();
 		var lastActivity = users[i].lastChat;
     	var timeSinceLastActivity = now.getTime() - lastActivity;
-    	if(timeSinceLastActivity > afkTime){
-    		var secsLastActive = timeSinceLastActivity / 1000;
+    	var secsLastActive = timeSinceLastActivity / 1000;
+    	var minsLastActive = secsLastActive/60;
+    	if(minsLastActive > afkTime && usrr.username != API.getUser().username){
     		if(API.getWaitListPosition(users[i].user.id) != -1){
-    			twoMinutes = 2 * 60;
-    			fiveMinutes = 5 * 60; 
-    			tenMinutes = 10 * 60;
-
-    			if(secsLastActive > afkTime-tenMinutes && users[i].afkWarnings == 2){
-					Message("you're AFK, you will be removed in 10 seconds!", messageStyles.MENTION, usrr.username);
-					users[i].afkWarnings += 1;
-    			}else if(secsLastActive > afkTime-fiveMinutes && users[i].afkWarnings == 1){
-					Message("you're AFK, chat within 5 minutes or you will be removed from waitlist("+msToStr(secsLastActive*1000)+")", messageStyles.MENTION, usrr.username);
-					users[i].afkWarnings += 1;
-    			}else if(secsLastActive > afkTime-twoMinutes && users[i].afkWarnings == 0){
-					Message("you're AFK, chat within 10 minutes or you will be removed from waitlist("+msToStr(secsLastActive*1000)+")", messageStyles.MENTION, usrr.username);
-					users[i].afkWarnings += 1;
-    			}else{
+    			fiveMinutes = 5; 
+    			tenMinutes = 10;
+    			if(minsLastActive > afkTime+tenMinutes && users[i].afkWarnings == 2){
+					Message("you're AFK, you will be removed in 5 seconds!", messageStyles.MENTION, usrr.username);
+					users[i].afkWarnings = 3;
+    			}else if(minsLastActive > afkTime+fiveMinutes && users[i].afkWarnings == 1){
+					Message("you're AFK, chat within 5 minutes or you will be removed from waitlist(AFK time:"+msToStr(secsLastActive*1000)+")", messageStyles.MENTION, usrr.username);
+					users[i].afkWarnings = 2;
+    			}else if(minsLastActive > afkTime && users[i].afkWarnings == 0){
+					Message("you're AFK, chat within 10 minutes or you will be removed from waitlist(AFK time:"+msToStr(secsLastActive*1000)+")", messageStyles.MENTION, usrr.username);
+					users[i].afkWarnings = 1;
+    			}else if(minsLastActive > afkTime+tenMinutes && users[i].afkWarnings == 3){
     				API.moderateRemoveDJ(usrr.id);
     				users[i].afkWarnings = 0;
     			}
-    		}else{
-    			users[i].afkWarnings = 0;
     		}
+    	}
+
+    	if(API.getWaitListPosition(users[i].user.id) == -1){
+    		users[i].lastChat = new Date().getTime();
     	}
 	}
 }
-setInterval(AfkCheck, 10000);
+setInterval(AfkCheck, 5000);
 
 //HOOKS
 function OnMessage(data){//http://support.plug.dj/hc/en-us/categories/200123567-API#chat
 	msg = data.message;
 	if(StartsWith(msg, "!")){
+		API.moderateDeleteChat(data.chatID);
 		if(HasPermision(API.getUser(data.fromID))){
 			OnUserCommand(data);
 		}else{
-			Message("["+data.from+"] insufficient permissions!", messageStyles.NORMAL, null);
+			//Message("["+data.from+"] insufficient permissions!", messageStyles.NORMAL, null);
 		}
-		API.moderateDeleteChat(data.chatID);
 		return;
 	}
 
-	if(afk && StartsWith(msg, "@"+API.getUser())){
+	if(afk && StartsWith(msg, "@"+API.getUser().username)){
 		Message(afkMessage, messageStyles.MENTION, data.from);
 	}
 
@@ -171,6 +172,9 @@ function OnUserCommand(data){//Needs data from OnMessage()
 		case "history":
 			songHistory(args, data);
 			break;
+		case "credits":
+			credits();
+			break;
 		default:
 			Message("["+data.from+"] error: Unknown command("+args[0]+")", messageStyles.NORMAL, null);
 			break;
@@ -193,25 +197,7 @@ function OnUserJoin(user){
 	users.push({"user": user, "inRoom": true, "lastChat": new Date().getTime(), "afkWarnings": 0});
 }
 function OnWaitlistUpdate(){
-	if(addQueue.length > 0){
-		var user = addQueue.shift();
-		var userList = API.getWaitList();
-		var amount = userList.length;
-		if(amount < 50){
-	    	API.moderateAddDJ(user.user.id);
-			return setTimeout(function() {
-				Move(user.user, user.position);
-			}, 1500);
-			OnWaitlistUpdate();
-		}else{
-			setTimeout(Sleep, 5000);
-			OnWaitlistUpdate();
-		}
-	}else{
-		return setTimeout(function() {
-    		return UnlockBooth();
-  		}, 1500);
-	}
+
 }
 
 //COMMANDS
@@ -225,14 +211,18 @@ function Afk(){
 		}
 	}
 }
+function credits(){
+	Message("This bot was made by: Maarten Peels (skype: maarten-peels)", messageStyles.ME, null);
+}
 function Msg(){
 	if(API.getUser().permission == 5){
 		sendMessages = !sendMessages;
 		if(sendMessages){
-			Message("Oke, I will send messages now..", messageStyles.LOG, null);
+			API.chatLog("Oke, I will send messages now..");
 		}else{
-			Message("Oke Oke, I will stop spamming!", messageStyles.LOG, null);
+			API.chatLog("Oke Oke, I will stop spamming!");
 		}
+		
 	}
 }
 function dclookup(args, data){
@@ -273,7 +263,7 @@ function dclookup(args, data){
 }
 function skip(args, data){
 	if(args.length == 1){
-		Message("DJ skipped, no reason given!", messageStyles.NORMAL, null);
+		//Message("DJ skipped, no reason given!", messageStyles.NORMAL, null);
 	}else{
 		var reason = "";
 		for(var i = 1; i < args.length; i++){
@@ -314,7 +304,7 @@ function swap(args, data){
 				Message("Removing " + userRemove.username + "...", messageStyles.NORMAL, null);
 				return setTimeout(function() {
 					API.moderateAddDJ(userAdd.id);
-              		Message("Adding " + userRemove.username + "...", messageStyles.NORMAL, null);
+              		Message("Adding " + userAdd.username + "...", messageStyles.NORMAL, null);
               		return setTimeout(function() {
               			Move(userAdd, userRemovePos);
               			return setTimeout(function() {
@@ -327,17 +317,17 @@ function swap(args, data){
 	}
 }
 function status(){
-	Message("Runing since: " + startTime, messageStyles.NORMAL, null);
-	Message(" ", messageStyles.NORMAL, null);
-	Message(users.length + " users since startup!", messageStyles.NORMAL, null);
+	Message("Runing since: " + startTime, messageStyles.ME, null);
+	Message(" ", messageStyles.ME, null);
+	Message(users.length + " users since startup!", messageStyles.ME, null);
 	var online = 0;
 	for (var i = 0; i < users.length; i++) {
 	    if(users[i].inRoom == 1){
 	    	online+=1;
 	    }
 	}
-	Message(online + " are in the room right now..", messageStyles.NORMAL, null);
-	Message(disconnectLog.length + " disconnects since startup!", messageStyles.NORMAL, null);
+	Message(online + " are in the room right now..", messageStyles.ME, null);
+	Message(disconnectLog.length + " disconnects since startup!", messageStyles.ME, null);
 }
 function addUser(args, data){
 	if(args.length != 3){
@@ -364,9 +354,7 @@ function addUser(args, data){
 					}, 1500);
            		});
 			}else{
-				return LockBooth(function() {
-					addQueue.push({"user": user, "position": args[2]});
-				});
+				//iets met wachtlijst ofz????
 			}
 		}else{
 			Message("["+data.from+"] error: user not found("+args[1]+", not in room?)", messageStyles.NORMAL, null);
