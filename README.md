@@ -28,12 +28,13 @@ This bot is written to help:
 ####User info
 *The bot keeps track of some user info, if he/she is in the room or not, afk warnings, etc.
 
-###Bot Automation
+###Bot Commands
 ####dclookup
 Usage: !dclookup @{username}
 Function: looks up the user in the disconnect-log list, and will send result in chat as shown below.
 
 1.{user} disconnected {songs} song(s) ago, he/she was on position {waitlist_pos}!
+
 2.{user} disconnected {songs} song(s) ago, he/she wasn't on the waitlist!
 
 ####skip
