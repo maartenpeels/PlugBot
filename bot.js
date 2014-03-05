@@ -1,4 +1,8 @@
 //Made by Maarten Peels (skype: maarten-peels)
+
+//ideas:
+//http://www.lensert.com/DT.png
+
 var songCount = 0;
 
 var startTime = GetDate();
@@ -10,14 +14,18 @@ var version = "Made for plug.dj version: 0.9.X";
 
 var disconnectLog = [];
 var users = [];
+var bannedUsers = [];
+var joinQueue = [];
 var history = [];
 
 var moveId = "";
 var moveTo = 1;
 
+var waitListLength = 50;
+
 var botName = API.getUser();
 
-var sendMessages = false;
+var sendMessages = true;
 
 function Initialize(){
 	GetUsers();
@@ -32,7 +40,7 @@ function HookEvents(){
 	API.on(API.WAIT_LIST_UPDATE, OnWaitlistUpdate);
 	API.on(API.USER_LEAVE, OnUserLeave);
 	setTimeout(Sleep, 200);
-	Message("Loaded! "+ version, messageStyles.LOG, null);
+	API.chatLog("Loaded! "+ version);
 	Message("Bot online!", messageStyles.ME, null);
 }
 
@@ -75,10 +83,10 @@ function AfkCheck(){
 					Message("you're AFK, you will be removed in 5 seconds!", messageStyles.MENTION, usrr.username);
 					users[i].afkWarnings = 3;
     			}else if(minsLastActive > afkTime+fiveMinutes && users[i].afkWarnings == 1){
-					Message("you're AFK, chat within 5 minutes or you will be removed from waitlist(AFK time:"+msToStr(secsLastActive*1000)+")", messageStyles.MENTION, usrr.username);
+					Message("AFK time: "+msToStr(secsLastActive*1000)+", chat within 5 minutes or you will be removed from waitlist!", messageStyles.MENTION, usrr.username);
 					users[i].afkWarnings = 2;
     			}else if(minsLastActive > afkTime && users[i].afkWarnings == 0){
-					Message("you're AFK, chat within 10 minutes or you will be removed from waitlist(AFK time:"+msToStr(secsLastActive*1000)+")", messageStyles.MENTION, usrr.username);
+					Message("AFK time: "+msToStr(secsLastActive*1000)+", chat within 10 minutes or you will be removed from waitlist!", messageStyles.MENTION, usrr.username);
 					users[i].afkWarnings = 1;
     			}else if(minsLastActive > afkTime+tenMinutes && users[i].afkWarnings == 3){
     				API.moderateRemoveDJ(usrr.id);
@@ -92,7 +100,21 @@ function AfkCheck(){
     	}
 	}
 }
+function Checks(){
+	//joinQueue
+	if(joinQueue.length > 0){
+		LockBooth();
+		var list = API.getWaitList();
+		if(list.length < waitListLength){
+			var user = joinQueue.shift();
+			AddUser(user.user, user.position);
+		}
+	}else{
+		UnlockBooth();
+	}
+}
 setInterval(AfkCheck, 5000);
+setInterval(Checks, 2000);
 
 //HOOKS
 function OnMessage(data){//http://support.plug.dj/hc/en-us/categories/200123567-API#chat
@@ -124,7 +146,6 @@ function OnMessage(data){//http://support.plug.dj/hc/en-us/categories/200123567-
 	}
 }
 function OnCommand(text){
-	text = text.substring(1, text.length);
 	console.debug(text);
 }
 function OnDJAdvance(data){//http://support.plug.dj/hc/en-us/categories/200123567-API#djadvance
@@ -149,7 +170,10 @@ function OnUserCommand(data){//Needs data from OnMessage()
 			Die();
 			break;
 		case "afk":
-			Afk();
+			userAfk();
+			break;
+		case "back":
+			userBack();
 			break;
 		case "msg":
 			Msg();
@@ -175,6 +199,9 @@ function OnUserCommand(data){//Needs data from OnMessage()
 		case "credits":
 			credits();
 			break;
+		case "kicksong":
+			kicksong();
+			break;
 		default:
 			Message("["+data.from+"] error: Unknown command("+args[0]+")", messageStyles.NORMAL, null);
 			break;
@@ -194,7 +221,14 @@ function OnUserLeave(user){
 	disconnectLog.push({"user": user, "totalSongs": songCount, "waitlist": API.getWaitListPosition(user.id), "used": 0, "time": GetDate()});
 }
 function OnUserJoin(user){
-	users.push({"user": user, "inRoom": true, "lastChat": new Date().getTime(), "afkWarnings": 0});
+	for (var i = 0; i < users.length; i++) {
+		if(users[i].user.username == user.username){
+			users[i].inRoom = true;
+		}else{
+			users.push({"user": user, "inRoom": true, "lastChat": new Date().getTime(), "afkWarnings": 0});
+		}
+		break;
+	}
 }
 function OnWaitlistUpdate(){
 
@@ -261,6 +295,20 @@ function dclookup(args, data){
 		}
 	}	
 }
+function kicksong(){
+	var dj = API.getDJ();
+	return setTimeout(function() {
+		EnableCycle();
+  		return setTimeout(function() {
+  			Message("song skipped, you will be placed 3rd in waitlist. Choose a different song!", messageStyles.MENTION, dj.username);
+  			API.moderateForceSkip();
+  			Move(dj, 3);
+  			return setTimeout(function() {
+        		return DisableCycle();
+      		}, 1500);
+  		}, 1500);
+	}, 1500);
+}
 function skip(args, data){
 	if(args.length == 1){
 		//Message("DJ skipped, no reason given!", messageStyles.NORMAL, null);
@@ -296,7 +344,7 @@ function swap(args, data){
 		    	break;
 		    }
 		}
-		if(userRemove == null || userAdd == null && userRemovePos != -1){
+		if(userRemove == null || userAdd == null && userRemovePos == -1){
 			Message("["+data.from+"] error parsing one or both names!", messageStyles.NORMAL, null);
 		}else{
 			return LockBooth(function() {
@@ -318,11 +366,11 @@ function swap(args, data){
 }
 function status(){
 	Message("Runing since: " + startTime, messageStyles.ME, null);
-	Message(" ", messageStyles.ME, null);
+	//Message(" ", messageStyles.ME, null);
 	Message(users.length + " users since startup!", messageStyles.ME, null);
 	var online = 0;
 	for (var i = 0; i < users.length; i++) {
-	    if(users[i].inRoom == 1){
+	    if(users[i].inRoom == true){
 	    	online+=1;
 	    }
 	}
@@ -343,7 +391,7 @@ function addUser(args, data){
 		}
 		if(user != null){
 			var list = API.getWaitList();
-			if(list.length < 50){
+			if(list.length < waitListLength){
 				return LockBooth(function() {
 	            	API.moderateAddDJ(user.id);
 					return setTimeout(function() {
@@ -354,7 +402,7 @@ function addUser(args, data){
 					}, 1500);
            		});
 			}else{
-				//iets met wachtlijst ofz????
+				joinQueue.push({"user": user, "position": parseInt(args[2])});
 			}
 		}else{
 			Message("["+data.from+"] error: user not found("+args[1]+", not in room?)", messageStyles.NORMAL, null);
@@ -435,18 +483,28 @@ function HasPermision(user){
 		return false;
 	}
 }
-LockBooth = function(callback) {
+function LockBooth(){
+	API.moderateLockWaitList(true);
+}
+function UnlockBooth(){
+	API.moderateLockWaitList(false);
+}
+function Move(user, pos){
+	moveId = user.id;
+	moveTo = parseInt(pos);
+	moveUser();
+}
+DisableCycle = function(callback) {
   if (callback == null) {
     callback = null;
   }
   return $.ajax({
-    url: "http://plug.dj/_/gateway/room.lock_booth",
+    url: "http://plug.dj/_/gateway/room.cycle_booth",
     type: 'POST',
     data: JSON.stringify({
-      service: "room.lock_booth",
+      service: "room.cycle_booth",
       body: [
         window.location.pathname.replace(/\//g, ''),
-        true,
         false
       ]
     }),
@@ -459,19 +517,18 @@ LockBooth = function(callback) {
     }
   });
 };
-UnlockBooth = function(callback) {
+EnableCycle = function(callback) {
   if (callback == null) {
     callback = null;
   }
   return $.ajax({
-    url: "http://plug.dj/_/gateway/room.lock_booth",
+    url: "http://plug.dj/_/gateway/room.cycle_booth",
     type: 'POST',
     data: JSON.stringify({
-      service: "room.lock_booth",
+      service: "room.cycle_booth",
       body: [
         window.location.pathname.replace(/\//g, ''),
-        false,
-        false
+        true
       ]
     }),
     async: this.async,
@@ -559,5 +616,11 @@ msToStr = function(msTime) {
       return false;
     }
 };
+function AddUser(user, pos){
+	API.moderateAddDJ(user.id);
+	return setTimeout(function() {
+		Move(user, pos);
+	}, 1500);
+}
 
 Initialize();
