@@ -30,36 +30,62 @@ This bot is written to help:
 
 ###Bot Commands
 ####dclookup
-Usage: !dclookup @{username}
+Usage: ```!dclookup @{username}```
 Function: looks up the user in the disconnect-log list, and will send result in chat as shown below.
 
-1.{user} disconnected {songs} song(s) ago, he/she was on position {waitlist_pos}!
+```{user} disconnected {songs} song(s) ago, he/she was on position {waitlist_pos}!```
 
-2.{user} disconnected {songs} song(s) ago, he/she wasn't on the waitlist!
+```{user} disconnected {songs} song(s) ago, he/she wasn't on the waitlist!```
 
 ####skip
-*info
+Usage: ```!skip```
+
+Function:
 
 ####die
-*info
+Usage: ```!die```
+
+Function: This command will unhook all event listeners and basically turn the bot off.
 
 ####lock
-*info
+Usage: ```!lock```
+
+Function: Locks the DJ booth
  
 ####unlock
-*info
+Usage: ```!unlock```
+
+Function: Unlocks the DJ booth
  
 ####swap
-*info
+Usage: ```!swap @{userRemove} for @{userAdd}```
+
+Function: *coming soon in readme*
  
 ####status
-*info
+Usage: ```!status```
+
+Function: *coming soon in readme*
 
 ####add
-*info
+Usage: ```!add @{user} {position}```
+
+Function: *coming soon in readme*
  
 ####history
-*info
+Usage: ```!history {songsAgo}```
+
+Function: *coming soon in readme*
+
+####credits
+Usage: ```!credits```
+
+Function: *coming soon in readme*
+
+####songskip
+Usage: ```!songskip```
+
+Function: *coming soon in readme*
  
  
 #How to run
