@@ -38,9 +38,10 @@ Function: looks up the user in the disconnect-log list, and will send result in 
 ```{user} disconnected {songs} song(s) ago, he/she wasn't on the waitlist!```
 
 ####skip
-Usage: ```!skip```
+Usage: ```!skip``` 
+Or: ```!skip {reason}```
 
-Function:
+Function: Skips the current song
 
 ####die
 Usage: ```!die```
@@ -60,32 +61,32 @@ Function: Unlocks the DJ booth
 ####swap
 Usage: ```!swap @{userRemove} for @{userAdd}```
 
-Function: *coming soon in readme*
+Function: Will remove {userRemove} and add {userAdd} on that position.
  
 ####status
 Usage: ```!status```
 
-Function: *coming soon in readme*
+Function: Will send some info in chat.
 
 ####add
 Usage: ```!add @{user} {position}```
 
-Function: *coming soon in readme*
+Function: Will add {user} to the waitlist at the given potition.
  
 ####history
 Usage: ```!history {songsAgo}```
 
-Function: *coming soon in readme*
+Function: Will show the user, song, and score of the given song number.
 
 ####credits
 Usage: ```!credits```
 
-Function: *coming soon in readme*
+Function: Will show credits message.
 
 ####songskip
 Usage: ```!songskip```
 
-Function: *coming soon in readme*
+Function: Will skip the DJ and place it back at position 3 in waitlist.
  
  
 #How to run
