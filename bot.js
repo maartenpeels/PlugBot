@@ -438,9 +438,12 @@ function songHistory(args, data){
 function moveback(args, data){
 	if(args.length == 3){
 		var user = findUser(args[1]);
-		var pos = API.getWaitListPosition(user.id)-parseInt(args[2]);
-		console.debug(user.id + " - " + pos);
-		//Move(user, pos); 
+		var position = API.getWaitListPosition(user.id);
+		if(position == -1){
+			var pos = position-parseInt(args[2]);
+			console.debug(pos);
+			//Move(user, pos); 
+		}
 	}else{
 		Message("["+data.from+"] usage: !moveback @{user} {spotsBack}", messageStyles.NORMAL, null);
 	}
