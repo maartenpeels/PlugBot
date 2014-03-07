@@ -440,7 +440,7 @@ function moveback(args, data){
 		var user = findUser(args[1]);
 		var pos = API.getWaitListPosition(user.id)-parseInt(args[2]);
 		console.debug(user.id + " - " + pos);
-		//Move(user, pos);
+		//Move(user, pos); 
 	}else{
 		Message("["+data.from+"] usage: !moveback @{user} {spotsBack}", messageStyles.NORMAL, null);
 	}
