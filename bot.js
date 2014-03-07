@@ -200,7 +200,7 @@ function OnUserCommand(data){//Needs data from OnMessage()
 			kicksong();
 			break;
 		case "moveback":
-			moveback();
+			moveback(args, data);
 			break;
 		default:
 			Message("["+data.from+"] error: Unknown command("+args[0]+")", messageStyles.NORMAL, null);
@@ -435,7 +435,7 @@ function songHistory(args, data){
 		Message("["+data.from+"] usage: !history {songsAgo}", messageStyles.NORMAL, null);
 	}
 }
-function moveback(data, args){
+function moveback(args, data){
 	if(args.length == 3){
 		var user = findUser(args[1]);
 		var pos = getWaitListPosition(user.id)-parseInt(args[2]);
