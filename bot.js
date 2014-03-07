@@ -1,8 +1,5 @@
 //Made by Maarten Peels (skype: maarten-peels)
 
-//ideas:
-//http://www.lensert.com/DT.png
-
 var songCount = 0;
 
 var startTime = GetDate();
@@ -134,9 +131,9 @@ function OnMessage(data){//http://support.plug.dj/hc/en-us/categories/200123567-
 	}
 
     if (msg.indexOf('fan me') !== -1 || msg.indexOf('fan for fan') !== -1 || msg.indexOf('fan pls') !== -1 || msg.indexOf('fan4fan') !== -1 || msg.indexOf('add me to fan') !== -1 || msg.indexOf('fan 4 fan') !== -1) {
-    	var m = "@{beggar}, please don't ask for fans.";
+    	var m = "please don't ask for fans.";
     	API.moderateDeleteChat(data.chatID);
-        Message(m.replace("{beggar}", data.from), messageStyles.NORMAL, null);
+        Message(m, messageStyles.MENTION, data.from);
     }
 
     for (var i = 0; i < users.length; i++) {
@@ -201,6 +198,9 @@ function OnUserCommand(data){//Needs data from OnMessage()
 			break;
 		case "kicksong":
 			kicksong();
+			break;
+		case "moveback":
+			moveback();
 			break;
 		default:
 			Message("["+data.from+"] error: Unknown command("+args[0]+")", messageStyles.NORMAL, null);
@@ -435,6 +435,15 @@ function songHistory(args, data){
 		Message("["+data.from+"] usage: !history {songsAgo}", messageStyles.NORMAL, null);
 	}
 }
+function moveback(data, args){
+	if(args.length == 3){
+		var user = findUser(args[1]);
+		var pos = getWaitListPosition(user.id)-parseInt(args[2]);
+		Move(user, pos);
+	}else{
+		Message("["+data.from+"] usage: !moveback @{user} {spotsBack}", messageStyles.NORMAL, null);
+	}
+}
 
 //Usefull Functions
 var messageStyles = {
@@ -444,6 +453,17 @@ var messageStyles = {
   ME : "ME",
   MENTION : "MENTION"
 };
+function findUser(name){
+	var user = null;
+	name = name.replace("@","");
+	for (var i = 0; i < users.length; i++) {
+	    if(users[i].user.username == name){
+	    	user = users[i].user;
+	    	break;
+	    }
+	}
+	return user;
+}
 function Message(text, type, user){
 	if(sendMessages){
 		if(type == messageStyles.LOG){
