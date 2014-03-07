@@ -437,12 +437,21 @@ function songHistory(args, data){
 }
 function moveback(args, data){
 	if(args.length == 3){
-		var user = findUser(args[1]);
-		var position = API.getWaitListPosition(user.id);
-		if(position == -1){
-			var pos = position-parseInt(args[2]);
-			console.debug(pos);
-			//Move(user, pos); 
+		var user = null;
+		name = name.replace("@","");
+		for (var i = 0; i < users.length; i++) {
+		    if(users[i].user.username == name){
+		    	user = users[i].user;
+		    	break;
+		    }
+		}
+		if(user != null){
+			var position = API.getWaitListPosition(user.id);
+			if(position == -1){
+				var pos = position-parseInt(args[2]);
+				console.debug(user.id + " - " + pos);
+				//Move(user, pos); 
+			}
 		}
 	}else{
 		Message("["+data.from+"] usage: !moveback @{user} {spotsBack}", messageStyles.NORMAL, null);
@@ -457,17 +466,6 @@ var messageStyles = {
   ME : "ME",
   MENTION : "MENTION"
 };
-function findUser(name){
-	var user = null;
-	name = name.replace("@","");
-	for (var i = 0; i < users.length; i++) {
-	    if(users[i].user.username == name){
-	    	user = users[i].user;
-	    	break;
-	    }
-	}
-	return user;
-}
 function Message(text, type, user){
 	if(sendMessages){
 		if(type == messageStyles.LOG){
