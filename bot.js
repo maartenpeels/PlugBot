@@ -438,7 +438,7 @@ function songHistory(args, data){
 function moveback(args, data){
 	if(args.length == 3){
 		var user = findUser(args[1]);
-		var pos = getWaitListPosition(user.id)-parseInt(args[2]);
+		var pos = API.getWaitListPosition(user.id)-parseInt(args[2]);
 		console.debug(user.id + " - " + pos);
 		//Move(user, pos);
 	}else{
