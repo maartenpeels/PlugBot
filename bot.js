@@ -250,13 +250,13 @@ function credits(){
 }
 function dclookup(args, data){
 	var user;
+	for (var i = 0; i < users.length; i++) {
+	    if(users[i].user.username == data.from){
+	    	user = users[i].user;
+	    	break;
+	    }
+	}
 	if(args.length == 1){
-		for (var i = 0; i < users.length; i++) {
-		    if(users[i].user.username == data.from){
-		    	user = users[i].user;
-		    	break;
-		    }
-		}
 		for (var i = 0; i < disconnectLog.length; i++) {
 			if(disconnectLog[i].user.username == user.username && disconnectLog[i].used == 0){
 				var extra = "";
@@ -290,7 +290,7 @@ function dclookup(args, data){
 		return;
 	}else if(args.length > 2 || args.length < 2){
 		Message("["+data.from+"] usage: !dclookup @{username}", messageStyles.NORMAL, null);
-	}else{
+	}else if(HasPermision(user)){
 		args[1] = args[1].replace("@","");
 		for (var i = 0; i < users.length; i++) {
 		    if(users[i].user.username == args[1]){
