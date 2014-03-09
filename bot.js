@@ -45,7 +45,7 @@ function HookEvents(){
 
 function GetUsers(){
 	API.getUsers().forEach(function(usr) {
-    	users.push({"user": usr, "inRoom": true, "lastChat": new Date().getTime(), "afkWarnings": 0});
+    	users.push({"user": usr, "inRoom": true, "lastChat": new Date().getTime(), "afkWarnings": 0, "position": API.getWaitListPosition(usr.id)});
 	});
 }
 function Sleep(){}
@@ -131,10 +131,6 @@ function OnMessage(data){//http://support.plug.dj/hc/en-us/categories/200123567-
 		return;
 	}
 
-	if(afk && StartsWith(msg, "@"+API.getUser().username)){
-		Message(afkMessage, messageStyles.MENTION, data.from);
-	}
-
     if (msg.indexOf('fan me') !== -1 || msg.indexOf('fan for fan') !== -1 || msg.indexOf('fan pls') !== -1 || msg.indexOf('fan4fan') !== -1 || msg.indexOf('add me to fan') !== -1 || msg.indexOf('fan 4 fan') !== -1) {
     	var m = "please don't ask for fans.";
     	API.moderateDeleteChat(data.chatID);
@@ -155,7 +151,7 @@ function OnDJAdvance(data){//http://support.plug.dj/hc/en-us/categories/20012356
 	songCount+=1;
 	var score = data.lastPlay.score;
 	history.push({"data": data, "positive": score.positive, "negative": score.negative, "curates": score.curates});
-	Message("positive: " + score.positive + " negative: " + score.negative + " curates: " + score.curates, messageStyles.ME ,null);
+	Message("Stats: " + score.positive + " :heavy_check_mark: | " + score.negative + " :heavy_plus_sign: | " + score.curates + " :heavy_multiplication_x:", messageStyles.ME ,null);
 	voteSkip = 0;
 }
 function OnUserCommand(data){//Needs data from OnMessage()
@@ -218,6 +214,7 @@ function OnUserCommand(data){//Needs data from OnMessage()
 	}
 }
 function OnUserLeave(user){
+	var u = null;
 	for (var i = 0; i < disconnectLog.length; i++) {
 		if(disconnectLog[i].user.username == user.username){
 			disconnectLog[i].used = 1;
@@ -226,22 +223,29 @@ function OnUserLeave(user){
 	for (var i = 0; i < users.length; i++) {
 		if(users[i].user.username == user.username){
 			users[i].inRoom = false;
+			u = users[i]
 		}
 	}
-	disconnectLog.push({"user": user, "totalSongs": songCount, "waitlist": API.getWaitListPosition(user.id), "used": 0, "time": GetDate()});
+	disconnectLog.push({"user": user, "totalSongs": songCount, "waitlist": u.position, "used": 0, "time": GetDate()});
 }
 function OnUserJoin(user){
 	for (var i = 0; i < users.length; i++) {
 		if(users[i].user.username == user.username){
 			users[i].inRoom = true;
 		}else{
-			users.push({"user": user, "inRoom": true, "lastChat": new Date().getTime(), "afkWarnings": 0});
+			users.push({"user": user, "inRoom": true, "lastChat": new Date().getTime(), "afkWarnings": 0, "position": API.getWaitListPosition(usr.id)});
 		}
 		break;
 	}
 }
-function OnWaitlistUpdate(){
-
+function OnWaitlistUpdate(usrs){
+	for (var i = 0; i < usrs.length; i++) {
+		for (var s = 0; s < users.length; s++) {
+			if(usrs[i].id == users[s].user.id){
+				users[s].position = API.getWaitListPosition(usrs[i].id);
+			}
+		}
+	}
 }
 
 //COMMANDS
