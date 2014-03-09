@@ -269,14 +269,14 @@ function dclookup(args, data){
 						return LockBooth(function() {
 			            	API.moderateAddDJ(user.id);
 							return setTimeout(function() {
-								Move(user, disconnectLog[i].position);
+								Move(user, disconnectLog[i].waitlist);
 			              		return setTimeout(function() {
 			                		return UnlockBooth();
 			              		}, 1500);
 							}, 1500);
 		           		});
 					}else{
-						joinQueue.push({"user": user, "position": parseInt(args[2])});
+						joinQueue.push({"user": user, "position": disconnectLog[i].waitlist});
 					}
 					return;
 				}else{
