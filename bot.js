@@ -4,8 +4,6 @@ var songCount = 0;
 
 var startTime = GetDate();
 
-var afk = false;
-var afkMessage = "I'm a bot.";
 var afkTime = 60;//minutes
 var version = "Made for plug.dj version: 0.9.X";
 
@@ -129,13 +127,7 @@ function OnMessage(data){//http://support.plug.dj/hc/en-us/categories/200123567-
 	msg = data.message;
 	if(StartsWith(msg, "!")){
 		API.moderateDeleteChat(data.chatID);
-		var arg = data.message.trim().split(" ");
-		if(!HasPermision(API.getUser(data.fromID)) || HasPermision(API.getUser(data.fromID))){
-			OnNormalUserCommand(data);
-		}
-		if((HasPermision(API.getUser(data.fromID)) || (data.message.indexOf("dclookup") != -1 && arg.length==1)) && data.message.indexOf("voteskip") == -1){
-			OnUserCommand(data);
-		}
+		OnUserCommand(data);
 		return;
 	}
 
@@ -163,76 +155,66 @@ function OnDJAdvance(data){//http://support.plug.dj/hc/en-us/categories/20012356
 	songCount+=1;
 	var score = data.lastPlay.score;
 	history.push({"data": data, "positive": score.positive, "negative": score.negative, "curates": score.curates});
+	Message("positive: " + score.positive + " negative: " + score.negative + " curates: " + score.curates, messageStyles.ME ,null);
 	voteSkip = 0;
-}
-function OnNormalUserCommand(data){
-	var args = data.message.trim().split(" ");
-	args[0] = args[0].substring(1, args[0].length);
-
-	switch(args[0])
-	{
-		case "voteskip":
-			voteSkip+=1;
-			break;
-		default:
-			if(!antiSpam)Message("["+data.from+"] error: Unknown command("+args[0]+")", messageStyles.NORMAL, null);
-			break;
-	}
 }
 function OnUserCommand(data){//Needs data from OnMessage()
 	var args = data.message.trim().split(" ");
 	args[0] = args[0].substring(1, args[0].length);
 
-	switch(args[0])
-	{
-		case "dclookup":
-			dclookup(args, data);
-			break;
-		case "skip":
-			skip(args, data);
-			break;
-		case "die":
-			Die();
-			break;
-		case "afk":
-			userAfk();
-			break;
-		case "back":
-			userBack();
-			break;
-		case "msg":
-			Msg();
-			break;
-		case "lock":
-			LockBooth();
-			break;
-		case "unlock":
-			UnlockBooth();
-			break;
-		case "swap":
-			swap(args, data);
-			break;
-		case "status":
-			status();
-			break;
-		case "add":
-			addUser(args, data);
-			break;
-		case "history":
-			songHistory(args, data);
-			break;
-		case "credits":
-			credits();
-			break;
-		case "kicksong":
-			kicksong();
-			break;
-		case "moveback":
-			moveback(args, data);
-			break;
-		default:
-			Message("["+data.from+"] error: Unknown command("+args[0]+")", messageStyles.NORMAL, null);
-			break;
+	var user = null;
+	for (var i = 0; i < users.length; i++) {
+	    if(users[i].user.username == data.from){
+	    	user = users[i].user;
+	    	break;
+	    }
+	}
+	if(user != null){
+		switch(args[0])
+		{
+			case "voteskip":
+				voteSkip+=1;
+				break;
+			case "dclookup":
+				dclookup(args, data);
+				break;
+			case "skip":
+				if(HasPermision(user)) skip(args, data);
+				break;
+			case "die":
+				if(HasPermision(user)) Die();
+				break;
+			case "lock":
+				if(HasPermision(user)) LockBooth();
+				break;
+			case "unlock":
+				if(HasPermision(user)) UnlockBooth();
+				break;
+			case "swap":
+				if(HasPermision(user)) swap(args, data);
+				break;
+			case "status":
+				if(HasPermision(user)) status();
+				break;
+			case "add":
+				if(HasPermision(user)) addUser(args, data);
+				break;
+			case "history":
+				if(HasPermision(user)) songHistory(args, data);
+				break;
+			case "credits":
+				credits();
+				break;
+			case "kicksong":
+				if(HasPermision(user)) kicksong();
+				break;
+			case "moveback":
+				if(HasPermision(user)) moveback(args, data);
+				break;
+			default:
+				Message("["+data.from+"] error: Unknown command("+args[0]+")", messageStyles.NORMAL, null);
+				break;
+		}
 	}
 }
 function OnUserLeave(user){
@@ -263,29 +245,8 @@ function OnWaitlistUpdate(){
 }
 
 //COMMANDS
-function Afk(){
-	if(API.getUser().permission == 5){
-		afk = !afk;
-		if(afk){
-			Message("I'm AFK now, brb!", messageStyles.LOG, null);
-		}else{
-			Message("Hey, I'm back!", messageStyles.LOG, null);
-		}
-	}
-}
 function credits(){
 	Message("This bot was made by: Maarten Peels (skype: maarten-peels)", messageStyles.ME, null);
-}
-function Msg(){
-	if(API.getUser().permission == 5){
-		sendMessages = !sendMessages;
-		if(sendMessages){
-			API.chatLog("Oke, I will send messages now..");
-		}else{
-			API.chatLog("Oke Oke, I will stop spamming!");
-		}
-		
-	}
 }
 function dclookup(args, data){
 	var user;
