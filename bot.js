@@ -22,8 +22,11 @@ var waitListLength = 50;
 
 var botName = API.getUser();
 
+var voteSkipkipAmount = 10;
+var voteSkip = 0;
+
 var sendMessages = true;
-var antiSpam = false; //recommended when you have a big room
+var antiSpam = true; //recommended when you have a big room
 
 function Initialize(){
 	GetUsers();
@@ -110,6 +113,13 @@ function Checks(){
 	}else{
 		UnlockBooth();
 	}
+
+	//skip song
+	if(voteSkip >= voteSkipkipAmount){
+		Message("DJ skipped, reason: to many votes to skip", messageStyles.NORMAL, null);
+		API.moderateForceSkip();
+	}
+	
 }
 setInterval(AfkCheck, 5000);
 setInterval(Checks, 2000);
@@ -119,10 +129,12 @@ function OnMessage(data){//http://support.plug.dj/hc/en-us/categories/200123567-
 	msg = data.message;
 	if(StartsWith(msg, "!")){
 		API.moderateDeleteChat(data.chatID);
-		if(HasPermision(API.getUser(data.fromID)) || (data.message.indexOf("dclookup") != -1 && data.message.indexOf("@") == -1)){
+		var arg = data.message.trim().split(" ");
+		if(!HasPermision(API.getUser(data.fromID)) || HasPermision(API.getUser(data.fromID))){
+			OnNormalUserCommand(data);
+		}
+		if((HasPermision(API.getUser(data.fromID)) || (data.message.indexOf("dclookup") != -1 && arg.length==1)) && data.message.indexOf("voteskip") == -1){
 			OnUserCommand(data);
-		}else{
-			//Message("["+data.from+"] insufficient permissions!", messageStyles.NORMAL, null);
 		}
 		return;
 	}
@@ -151,6 +163,21 @@ function OnDJAdvance(data){//http://support.plug.dj/hc/en-us/categories/20012356
 	songCount+=1;
 	var score = data.lastPlay.score;
 	history.push({"data": data, "positive": score.positive, "negative": score.negative, "curates": score.curates});
+	voteSkip = 0;
+}
+function OnNormalUserCommand(data){
+	var args = data.message.trim().split(" ");
+	args[0] = args[0].substring(1, args[0].length);
+
+	switch(args[0])
+	{
+		case "voteskip":
+			voteSkip+=1;
+			break;
+		default:
+			if(!antiSpam)Message("["+data.from+"] error: Unknown command("+args[0]+")", messageStyles.NORMAL, null);
+			break;
+	}
 }
 function OnUserCommand(data){//Needs data from OnMessage()
 	var args = data.message.trim().split(" ");
