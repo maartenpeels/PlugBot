@@ -23,6 +23,7 @@ var waitListLength = 50;
 var botName = API.getUser();
 
 var sendMessages = true;
+var antiSpam = false; //recommended when you have a big room
 
 function Initialize(){
 	GetUsers();
@@ -77,10 +78,10 @@ function AfkCheck(){
     			fiveMinutes = 5; 
     			tenMinutes = 10;
     			if(minsLastActive > afkTime+tenMinutes && users[i].afkWarnings == 2){
-					Message("you're AFK, you will be removed in 5 seconds!", messageStyles.MENTION, usrr.username);
+					if(!antiSpam) Message("you're AFK, you will be removed in 5 seconds!", messageStyles.MENTION, usrr.username);
 					users[i].afkWarnings = 3;
     			}else if(minsLastActive > afkTime+fiveMinutes && users[i].afkWarnings == 1){
-					Message("AFK time: "+msToStr(secsLastActive*1000)+", chat within 5 minutes or you will be removed from waitlist!", messageStyles.MENTION, usrr.username);
+					if(!antiSpam) Message("AFK time: "+msToStr(secsLastActive*1000)+", chat within 5 minutes or you will be removed from waitlist!", messageStyles.MENTION, usrr.username);
 					users[i].afkWarnings = 2;
     			}else if(minsLastActive > afkTime && users[i].afkWarnings == 0){
 					Message("AFK time: "+msToStr(secsLastActive*1000)+", chat within 10 minutes or you will be removed from waitlist!", messageStyles.MENTION, usrr.username);
@@ -118,7 +119,7 @@ function OnMessage(data){//http://support.plug.dj/hc/en-us/categories/200123567-
 	msg = data.message;
 	if(StartsWith(msg, "!")){
 		API.moderateDeleteChat(data.chatID);
-		if(HasPermision(API.getUser(data.fromID))){
+		if(HasPermision(API.getUser(data.fromID)) || (data.message.indexOf("dclookup") != -1 && data.message.indexOf("@") == -1)){
 			OnUserCommand(data);
 		}else{
 			//Message("["+data.from+"] insufficient permissions!", messageStyles.NORMAL, null);
@@ -261,7 +262,45 @@ function Msg(){
 }
 function dclookup(args, data){
 	var user;
-	if(args.length > 2 || args.length < 2){
+	if(args.length == 1){
+		for (var i = 0; i < users.length; i++) {
+		    if(users[i].user.username == data.from){
+		    	user = users[i].user;
+		    	break;
+		    }
+		}
+		for (var i = 0; i < disconnectLog.length; i++) {
+			if(disconnectLog[i].user.username == user.username && disconnectLog[i].used == 0){
+				var extra = "";
+				if((songCount-disconnectLog[i].totalSongs) > 1 || (songCount-disconnectLog[i].totalSongs) == 0){
+					extra = "s";
+				}
+				if(disconnectLog[i].waitlist != -1){
+					var list = API.getWaitList();
+					if(list.length < waitListLength){
+						return LockBooth(function() {
+			            	API.moderateAddDJ(user.id);
+							return setTimeout(function() {
+								Move(user, disconnectLog[i].position);
+			              		return setTimeout(function() {
+			                		return UnlockBooth();
+			              		}, 1500);
+							}, 1500);
+		           		});
+					}else{
+						joinQueue.push({"user": user, "position": parseInt(args[2])});
+					}
+					return;
+				}else{
+					if(!antiSpam)Message(user.username + " disconnected " + (songCount-disconnectLog[i].totalSongs) + " song"+extra+" ago, he/she wasn't on the waitlist!", messageStyles.NORMAL, null);
+					return;
+				}
+				break;
+			}
+		}
+		if(!antiSpam)Message("I didn't see "+user.username+" disconnect!", messageStyles.NORMAL, null);
+		return;
+	}else if(args.length > 2 || args.length < 2){
 		Message("["+data.from+"] usage: !dclookup @{username}", messageStyles.NORMAL, null);
 	}else{
 		args[1] = args[1].replace("@","");
