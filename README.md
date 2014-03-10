@@ -1,3 +1,6 @@
+#NOTE!
+##I'm making a custom script for a room on plug.dj so I won't be working alot on this one for the time being..
+
 Plug.DJ Moderation Bot
 ==========================
 Written by Maarten Peels
