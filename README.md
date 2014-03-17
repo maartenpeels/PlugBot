@@ -1,5 +1,5 @@
 #NOTE!
-##I'm making a custom script for a room on plug.dj so I won't be working alot on this one for the time being..
+##I'm making a custom script for a room on plug.dj so it stopped being open source, maybe I'll make it open source someday, at least there's some working code in this one that you could use :)
 
 Plug.DJ Moderation Bot
 ==========================
